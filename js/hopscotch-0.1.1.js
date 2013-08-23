@@ -378,6 +378,7 @@
       }
 
       if (typeof step.target === 'string') {
+        step.originalTarget = step.target;
         //Just one target to test. Check, cache, and return its results.
         step.target = utils.getStepTargetHelper(step.target);
         return step.target;
@@ -400,6 +401,11 @@
           }
         }
         return null;
+      }
+      else if (!document.contains(step.target) && typeof step.originalTarget === 'string') {
+        // Do requery of an element
+        step.target = utils.getStepTargetHelper(step.originalTarget);
+        return step.target;
       }
 
       // Assume that the step.target is a DOM element
