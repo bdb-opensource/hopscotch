@@ -402,7 +402,7 @@
         }
         return null;
       }
-      else if (!document.contains(step.target) && typeof step.originalTarget === 'string') {
+      else if (!(typeof document.contains === 'function' ? document : document.documentElement).contains(step.target) && typeof step.originalTarget === 'string') {
         // Do requery of an element
         step.target = utils.getStepTargetHelper(step.originalTarget);
         return step.target;
