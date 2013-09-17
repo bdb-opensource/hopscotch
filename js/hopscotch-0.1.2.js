@@ -403,7 +403,7 @@
         return null;
       }
       else if (!(typeof document.contains === 'function' ? document : document.documentElement).contains(step.target) && typeof step.originalTarget === 'string') {
-        // Do requery of an element
+        // Requery an element
         step.target = utils.getStepTargetHelper(step.originalTarget);
         return step.target;
       }
