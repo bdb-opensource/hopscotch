@@ -163,7 +163,7 @@
       if (Array.isArray(arr)) {
         fn = helpers[arr[0]];
         if (typeof fn === 'function') {
-          fn.apply(this, arr.slice(1));
+          return fn.apply(this, arr.slice(1));
         }
       }
     },
@@ -182,7 +182,7 @@
       if (Array.isArray(arr)) {
         if (typeof arr[0] === 'string') {
           // Assume there are no nested arrays. This is the one and only callback.
-          utils.invokeCallbackArrayHelper(arr);
+          return utils.invokeCallbackArrayHelper(arr);
         }
         else { // assume an array
           for (i = 0, len = arr.length; i < len; ++i) {
@@ -199,13 +199,13 @@
      */
     invokeCallback: function(cb) {
       if (typeof cb === 'function') {
-        cb();
+        return cb();
       }
       if (typeof cb === 'string' && helpers[cb]) { // name of a helper
-        helpers[cb]();
+        return helpers[cb]();
       }
       else { // assuming array
-        utils.invokeCallbackArray(cb);
+        return utils.invokeCallbackArray(cb);
       }
     },
 
@@ -223,7 +223,7 @@
           len;
 
       if (stepCb) {
-        this.invokeCallback(stepCb);
+        return this.invokeCallback(stepCb);
       }
 
       for (i=0, len=cbArr.length; i<len; ++i) {
@@ -842,7 +842,10 @@
      * @private
      */
     _removeCTACallback: function() {
-      utils.removeEvtListener(this.ctaBtnEl, 'click', this._ctaFn);
+      if (this.ctaBtnEl && this._ctaFn) {
+        utils.removeEvtListener(this.ctaBtnEl, 'click', this._ctaFn);
+        this._ctaFn = null;
+      }
     },
 
     /**
@@ -1089,7 +1092,7 @@
         utils.removeEvtListener(this.closeBtnEl, 'click', this._getCloseFn());
       }
       if (this.ctaBtnEl && this.onCTA) {
-        utils.removeEvtListener(this.ctaBtnEl, 'click', this.onCTA);
+        this._removeCTACallback();
       }
     },
 
@@ -1610,6 +1613,8 @@
        * @private
        */
       changeStepCb = function(stepNum) {
+        var doShowFollowingStep;
+
         if (stepNum === -1) {
           // Wasn't able to find a step with an existing element. End tour.
           return this.endTour(true);
@@ -1617,10 +1622,10 @@
 
         if (doCallbacks) {
           if (direction > 0) {
-            utils.invokeEventCallbacks('next', origStep.onNext);
+            doShowFollowingStep = utils.invokeEventCallbacks('next', origStep.onNext);
           }
           else {
-            utils.invokeEventCallbacks('prev', origStep.onPrev);
+            doShowFollowingStep = utils.invokeEventCallbacks('prev', origStep.onPrev);
           }
         }
 
@@ -1632,7 +1637,17 @@
           return;
         }
 
-        this.showStep(stepNum);
+        doShowFollowingStep = utils.valOrDefault(doShowFollowingStep, true);
+
+        // If the onNext/onPrev callback returned false, halt the tour and
+        // don't show the next step.
+        if (doShowFollowingStep) {
+          this.showStep(stepNum);
+        }
+        else {
+          // Halt tour (but don't clear state)
+          this.endTour(false);
+        }
       };
 
       if (!wasMultiPage && getOption('skipIfNoElement')) {
@@ -1979,6 +1994,15 @@
     };
 
     /**
+     * getCurrTarget
+     *
+     * @return {Object} The currently visible target.
+     */
+    this.getCurrTarget = function() {
+      return utils.getStepTarget(getCurrStep());
+    };
+
+    /**
      * getCurrStepNum
      *
      * @return {number} The current zero-based step number.
@@ -2035,7 +2059,7 @@
      * to hopscotch.configure or hopscotch.listen will not be removed). If
      * evtName is null or undefined, callbacks for all events will be removed.
      *
-     * @param {string} evtName Optional Event name for which we should remove callbacks 
+     * @param {string} evtName Optional Event name for which we should remove callbacks
      * @param {boolean} tourOnly Optional flag to indicate we should only remove callbacks added
      *    by a tour. Defaults to false.
      * @returns {Object} Hopscotch
